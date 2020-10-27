@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -30,7 +32,7 @@ func run() error {
 	svc := dynamodb.New(sess)
 
 	info := Info{"Rolando", "Umana"}
-	user := User{"rolando.umana@gmail.com", "X", info}
+	user := User{"rolando.umana@gmail.com", time.Now().Format("2006-01-02"), info}
 
 	av, err := dynamodbattribute.MarshalMap(user)
 	if err != nil {
@@ -54,9 +56,9 @@ func run() error {
 
 //User ...
 type User struct {
-	Email string `json:"Email,omitempty"`
-	ID    string `json:"Id,omitempty"`
-	Info  Info   `json:"info,omitempty"`
+	Email   string `json:"email,omitempty"`
+	Created string `json:"created,omitempty"`
+	Info    Info   `json:"info,omitempty"`
 }
 
 //Info ...

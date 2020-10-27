@@ -46,23 +46,25 @@ resources:
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.DYNAMODB_TABLE_USER}
         AttributeDefinitions:
-          - AttributeName: Email
+          - AttributeName: email
             AttributeType: S
-          - AttributeName: Id
+          - AttributeName: created
             AttributeType: S
         KeySchema:
-          - AttributeName: Email
+          - AttributeName: email
             KeyType: HASH
-        GlobalSecondaryIndexes:
-          - IndexName: IdIndex
-            KeySchema:
-              - AttributeName: Id
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
-            ProvisionedThroughput:
-              ReadCapacityUnits: 1
-              WriteCapacityUnits: 1
+          - AttributeName: created
+            KeyType: RANGE
+        # GlobalSecondaryIndexes:
+          # - IndexName: IdIndex
+            # KeySchema:
+              # - AttributeName: Id
+                # KeyType: HASH
+            # Projection:
+              # ProjectionType: ALL
+            # ProvisionedThroughput:
+              # ReadCapacityUnits: 1
+              # WriteCapacityUnits: 1
 
 # you can add statements to the Lambda function's IAM Role here
 #  iamRoleStatements:
