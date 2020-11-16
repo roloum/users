@@ -48,8 +48,8 @@ func Create(ctx context.Context, dynamoDB *dynamodb.DynamoDB, nu *NewUser,
 			"lastName":  {S: aws.String(u.LastName)},
 			"active":    {BOOL: aws.Bool(u.Active)},
 		},
-		//ConditionExpression: aws.String("attribute_not_exists(email)"),
-		TableName: aws.String("User"),
+		ConditionExpression: aws.String("attribute_not_exists(email)"),
+		TableName:           aws.String("User"),
 	}
 
 	if _, err := dynamoDB.PutItemWithContext(ctx, input); err != nil {
