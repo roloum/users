@@ -90,19 +90,30 @@ resources:
 ############################################
 # default template
 ############################################
-# package:
-#   exclude:
-#     - ./**
-#   include:
-#     - ./bin/**
-#
-# functions:
-#   hello:
-#     handler: bin/hello
-#     events:
-#       - http:
-#           path: hello
-#           method: get
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bin/**
+functions:
+  createUser:
+    handler: bin/createUser
+    events:
+      - http:
+          path: /user/create
+          method: post
+  users:
+    handler: bin/users
+    events:
+      - http:
+          path: users
+          method: get
+#  hello:
+#    handler: bin/hello
+#    events:
+#      - http:
+#          path: hello
+#          method: get
 #   world:
 #     handler: bin/world
 #     events:

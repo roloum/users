@@ -2,11 +2,15 @@ package user
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	emailaddress "github.com/mcnijman/go-emailaddress"
 )
 
 //User contains information about the user
@@ -32,8 +36,13 @@ func Create(ctx context.Context, dynamoDB *dynamodb.DynamoDB, nu *NewUser,
 	log *log.Logger) (*User, error) {
 	log.Printf("Creating user: %v\n", nu)
 
+	if err := validateNew(nu); err != nil {
+		log.Printf("Error validating new user: %s", err)
+		return nil, err
+	}
+
 	u := &User{
-		Email:     nu.Email,
+		Email:     strings.ToLower(nu.Email),
 		FirstName: nu.FirstName,
 		LastName:  nu.LastName,
 		Active:    false,
@@ -58,4 +67,27 @@ func Create(ctx context.Context, dynamoDB *dynamodb.DynamoDB, nu *NewUser,
 
 	log.Printf("User created: %v\n", *u)
 	return u, nil
+}
+
+//validateNew validates the new user
+func validateNew(nu *NewUser) error {
+	if err := isValidEmail(nu.Email); err != nil {
+		return err
+	}
+	if nu.FirstName == "" {
+		return errors.New("First name is empty")
+	}
+	if nu.LastName == "" {
+		return errors.New("First name is empty")
+	}
+	return nil
+}
+
+//isValidEmail validates an email address
+func isValidEmail(email string) error {
+	if _, err := emailaddress.Parse(email); err != nil {
+
+		return fmt.Errorf("Email: %s", err)
+	}
+	return nil
 }

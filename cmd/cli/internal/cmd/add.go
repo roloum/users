@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -25,7 +26,10 @@ var addCmd = &cobra.Command{
 		log := ctx.Value(ContextKey(LOG)).(*log.Logger)
 		log.Println("Executing the add command")
 
-		dynamoDB := ctx.Value(ContextKey(DYNAMO)).(*dynamodb.DynamoDB)
+		dynamoDB, ok := ctx.Value(ContextKey(DYNAMO)).(*dynamodb.DynamoDB)
+		if !ok {
+			return fmt.Errorf("Missing DynamoDB connection")
+		}
 
 		user, err := user.Create(ctx, dynamoDB, &user.NewUser{Email: email,
 			FirstName: firstName, LastName: lastName}, log)
