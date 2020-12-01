@@ -3,14 +3,28 @@ package user
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	emailaddress "github.com/mcnijman/go-emailaddress"
+)
+
+const (
+	//ErrorFirstNameIsEmpty Error describes first name being empty
+	ErrorFirstNameIsEmpty = "FirstNameIsEmpty"
+
+	//ErrorLastNameIsEmpty Error describes last name being empty
+	ErrorLastNameIsEmpty = "LastNameIsEmpty"
+
+	//ErrorEmailIsEmpty Error describes email being empty
+	ErrorEmailIsEmpty = "EmailIsEmpty"
+
+	//ErrorInvalidEmail Error describes email being invalid
+	ErrorInvalidEmail = "InvalidEmail"
 )
 
 //User contains information about the user
@@ -32,7 +46,7 @@ type NewUser struct {
 
 //Create creates a new user in DynamoDB and returns a pointer to the User
 //object
-func Create(ctx context.Context, dynamoDB *dynamodb.DynamoDB, nu *NewUser,
+func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser,
 	log *log.Logger) (*User, error) {
 	log.Printf("Creating user: %v\n", nu)
 
@@ -71,14 +85,17 @@ func Create(ctx context.Context, dynamoDB *dynamodb.DynamoDB, nu *NewUser,
 
 //validateNew validates the new user
 func validateNew(nu *NewUser) error {
-	if err := isValidEmail(nu.Email); err != nil {
-		return err
-	}
 	if nu.FirstName == "" {
-		return errors.New("First name is empty")
+		return errors.New(ErrorFirstNameIsEmpty)
 	}
 	if nu.LastName == "" {
-		return errors.New("First name is empty")
+		return errors.New(ErrorLastNameIsEmpty)
+	}
+	if nu.Email == "" {
+		return errors.New(ErrorEmailIsEmpty)
+	}
+	if err := isValidEmail(nu.Email); err != nil {
+		return err
 	}
 	return nil
 }
@@ -87,7 +104,7 @@ func validateNew(nu *NewUser) error {
 func isValidEmail(email string) error {
 	if _, err := emailaddress.Parse(email); err != nil {
 
-		return fmt.Errorf("Email: %s", err)
+		return errors.New(ErrorInvalidEmail)
 	}
 	return nil
 }

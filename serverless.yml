@@ -100,7 +100,7 @@ functions:
     handler: bin/createUser
     events:
       - http:
-          path: /user/create
+          path: /users/create
           method: post
   users:
     handler: bin/users
