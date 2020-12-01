@@ -54,10 +54,10 @@ func Handler(ctx context.Context, dynamoDB *dynamodb.DynamoDB,
 
 	u, err := user.Create(ctx, dynamoDB, newUser, log)
 	if err != nil {
-		return getResponse(http.StatusInternalServerError, "", nil, log)
+		return getResponse(http.StatusUnprocessableEntity, err.Error(), nil, log)
 	}
 
-	return getResponse(http.StatusOK, "User created", u, log)
+	return getResponse(http.StatusCreated, "User created", u, log)
 }
 
 // getResponse builds an API Gateway Response
