@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"errors"
 	"log"
 	"strings"
 	"time"
@@ -10,21 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	emailaddress "github.com/mcnijman/go-emailaddress"
-)
-
-const (
-	//ErrorFirstNameIsEmpty Error describes first name being empty
-	ErrorFirstNameIsEmpty = "FirstNameIsEmpty"
-
-	//ErrorLastNameIsEmpty Error describes last name being empty
-	ErrorLastNameIsEmpty = "LastNameIsEmpty"
-
-	//ErrorEmailIsEmpty Error describes email being empty
-	ErrorEmailIsEmpty = "EmailIsEmpty"
-
-	//ErrorInvalidEmail Error describes email being invalid
-	ErrorInvalidEmail = "InvalidEmail"
 )
 
 //User contains information about the user
@@ -50,9 +34,8 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 	log *log.Logger) (*User, error) {
 	log.Printf("Creating user: %v\n", nu)
 
-	if err := validateNew(nu); err != nil {
-		log.Printf("Error validating new user: %s", err)
-		return nil, err
+	if err := validate.Struct(nu); err != nil {
+		return nil, getValidationError(err)
 	}
 
 	u := &User{
@@ -81,30 +64,4 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 
 	log.Printf("User created: %v\n", *u)
 	return u, nil
-}
-
-//validateNew validates the new user
-func validateNew(nu *NewUser) error {
-	if nu.FirstName == "" {
-		return errors.New(ErrorFirstNameIsEmpty)
-	}
-	if nu.LastName == "" {
-		return errors.New(ErrorLastNameIsEmpty)
-	}
-	if nu.Email == "" {
-		return errors.New(ErrorEmailIsEmpty)
-	}
-	if err := isValidEmail(nu.Email); err != nil {
-		return err
-	}
-	return nil
-}
-
-//isValidEmail validates an email address
-func isValidEmail(email string) error {
-	if _, err := emailaddress.Parse(email); err != nil {
-
-		return errors.New(ErrorInvalidEmail)
-	}
-	return nil
 }

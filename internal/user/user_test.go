@@ -76,7 +76,7 @@ func TestCreateUser(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			_, err := Create(context.Background(), tc.mockDBSvc, tc.user, log)
 			if !reflect.DeepEqual(err, tc.err) {
-				t.Errorf("Expected: %v. Received: %v", err, tc.err)
+				t.Errorf("Expected: %v. Received: %v", tc.err, err)
 			}
 		})
 	}
