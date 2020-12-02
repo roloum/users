@@ -18,12 +18,8 @@ func init() {
 type MockDynamoDB struct {
 	dynamodbiface.DynamoDBAPI
 
-	QueryOutput                *dynamodb.QueryOutput
-	UpdateItemWithOutput       *dynamodb.UpdateItemOutput
-	PutItemOutput              *dynamodb.PutItemOutput
-	QueryOutputError           error
-	UpdateItemWithContextError error
-	PutItemOutputError         error
+	PutItemOutput      *dynamodb.PutItemOutput
+	PutItemOutputError error
 }
 
 //PutItemWithContext mocks the PutItemWithContext function
