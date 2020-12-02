@@ -26,6 +26,8 @@ var validate *validator.Validate
 //init instantiates a validator
 func init() {
 	validate = validator.New()
+
+	validate.RegisterValidation("validEmail", isValidEmail)
 }
 
 //getValidationError Returns the first error reported by the validator
@@ -43,19 +45,22 @@ func getValidationError(verr error) error {
 		switch err.Tag() {
 		case "required":
 			return errors.New(ErrorEmailIsEmpty)
-		case "email":
+			//		case "email":
+			//			return errors.New(ErrorInvalidEmail)
+		case "validEmail":
 			return errors.New(ErrorInvalidEmail)
 		}
 	}
-
 	return nil
 }
 
-//isValidEmail validates an email address
-func isValidEmail(email string) error {
-	if _, err := emailaddress.Parse(email); err != nil {
-
-		return errors.New(ErrorInvalidEmail)
+//isValidEmail validates an email address using go-emailaddress
+//From validator: This validates that a string value contains a valid email
+//This may not conform to all possibilities of any rfc standard, but neither
+//does any email provider accept all possibilities.
+func isValidEmail(fl validator.FieldLevel) bool {
+	if _, err := emailaddress.Parse(fl.Field().String()); err != nil {
+		return false
 	}
-	return nil
+	return true
 }

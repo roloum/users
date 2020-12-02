@@ -23,7 +23,7 @@ type User struct {
 
 //NewUser contains information to create new user
 type NewUser struct {
-	Email     string `json:"email" validate:"required,email"`
+	Email     string `json:"email" validate:"required,validEmail"`
 	FirstName string `json:"firstName" validate:"required"`
 	LastName  string `json:"lastName" validate:"required"`
 }
