@@ -8,6 +8,7 @@ import (
 
 	"github.com/roloum/users/cmd/cli/internal/cmd"
 	uaws "github.com/roloum/users/internal/aws"
+	"github.com/roloum/users/internal/config"
 )
 
 func main() {
@@ -22,6 +23,12 @@ func main() {
 func run(log *log.Logger) error {
 
 	ctx := context.WithValue(context.Background(), cmd.ContextKey(cmd.LOG), log)
+
+	cfg, err := config.Load(log)
+	if err != nil {
+		return err
+	}
+	ctx = context.WithValue(ctx, cmd.ContextKey(cmd.CONFIG), cfg)
 
 	sess, err := uaws.GetSession(log)
 	if err != nil {

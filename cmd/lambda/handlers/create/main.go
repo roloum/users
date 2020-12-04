@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	uaws "github.com/roloum/users/internal/aws"
+	"github.com/roloum/users/internal/config"
 	"github.com/roloum/users/internal/user"
 )
 
@@ -39,6 +40,7 @@ type (
 // Handler is our lambda handler invoked by the `lambda.Start` function call
 func Handler(ctx context.Context, dynamoDB *dynamodb.DynamoDB,
 	request events.APIGatewayProxyRequest,
+	cfg config.Config,
 	log *log.Logger) (Response, error) {
 
 	var body createRequest
@@ -52,7 +54,7 @@ func Handler(ctx context.Context, dynamoDB *dynamodb.DynamoDB,
 		LastName:  body.LastName,
 	}
 
-	u, err := user.Create(ctx, dynamoDB, newUser, log)
+	u, err := user.Create(ctx, dynamoDB, newUser, "User", log)
 	if err != nil {
 		return getResponse(http.StatusUnprocessableEntity, err.Error(), nil, log)
 	}
@@ -88,14 +90,19 @@ func getResponse(statusCode int, message string, u *user.User, log *log.Logger) 
 func initHandler(ctx context.Context, request events.APIGatewayProxyRequest) (
 	Response, error) {
 
-	log := log.New(os.Stderr, "Users: ", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	log := log.New(os.Stdout, "Users: ", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+
+	cfg, err := config.Load(log)
+	if err != nil {
+		return Response{}, err
+	}
 
 	sess, err := uaws.GetSession(log)
 	if err != nil {
 		return Response{}, err
 	}
 
-	return Handler(ctx, uaws.GetDynamoDB(sess), request, log)
+	return Handler(ctx, uaws.GetDynamoDB(sess), request, cfg, log)
 
 }
 

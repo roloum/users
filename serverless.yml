@@ -24,7 +24,7 @@ provider:
   name: aws
   runtime: go1.x
   environment:
-    DYNAMODB_TABLE_USER: User
+    AWS_DYNAMODB_TABLE_USER: ${env:USERS_AWS_DYNAMODB_TABLE_USER}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -44,7 +44,7 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:provider.environment.DYNAMODB_TABLE_USER}
+        TableName: ${self:provider.environment.AWS_DYNAMODB_TABLE_USER}
         AttributeDefinitions:
           - AttributeName: email
             AttributeType: S
@@ -95,19 +95,20 @@ package:
     - ./**
   include:
     - ./bin/**
-functions:
-  createUser:
-    handler: bin/createUser
-    events:
-      - http:
-          path: /users/create
-          method: post
-  users:
-    handler: bin/users
-    events:
-      - http:
-          path: users
-          method: get
+#### functions:
+####   createUser:
+####     handler: bin/createUser
+####     events:
+####       - http:
+####           path: /users/create
+####           method: post
+####   users:
+####     handler: bin/users
+####     events:
+####       - http:
+####           path: users
+####           method: get
+
 #  hello:
 #    handler: bin/hello
 #    events:
@@ -120,6 +121,8 @@ functions:
 #       - http:
 #           path: world
 #           method: get
+
+
 ############################################
 # default template
 ############################################

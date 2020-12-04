@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/roloum/users/internal/config"
 	"github.com/roloum/users/internal/user"
 	"github.com/spf13/cobra"
 )
@@ -26,13 +27,23 @@ var addCmd = &cobra.Command{
 		log := ctx.Value(ContextKey(LOG)).(*log.Logger)
 		log.Println("Executing the add command")
 
+		cfg, ok := ctx.Value(ContextKey(CONFIG)).(config.Config)
+		if !ok {
+			return fmt.Errorf("Missing DynamoDB connection")
+		}
+
 		dynamoDB, ok := ctx.Value(ContextKey(DYNAMO)).(*dynamodb.DynamoDB)
 		if !ok {
 			return fmt.Errorf("Missing DynamoDB connection")
 		}
 
-		user, err := user.Create(ctx, dynamoDB, &user.NewUser{Email: email,
-			FirstName: firstName, LastName: lastName}, log)
+		nu := &user.NewUser{
+			Email:     email,
+			FirstName: firstName,
+			LastName:  lastName,
+		}
+
+		user, err := user.Create(ctx, dynamoDB, nu, cfg.AWS.DynamoDB.Table.User, log)
 		if err != nil {
 			return err
 		}

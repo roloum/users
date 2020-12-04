@@ -19,6 +19,9 @@ const (
 
 	//ErrorInvalidEmail Error describes email being invalid
 	ErrorInvalidEmail = "InvalidEmail"
+
+	//ErrorUserTableNameIsEmpty Error describes AWS table name being empty
+	ErrorUserTableNameIsEmpty = "UserTableNameIsEmpty"
 )
 
 var validate *validator.Validate

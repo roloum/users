@@ -6,9 +6,7 @@ TEST_CMD= go test -timeout 30s
 
 build: gomodgen
 	export GO111MODULE=on
-	${BUILD_CMD} bin/usercli cmd/cli/main.go
 	${BUILD_CMD} bin/createUser cmd/lambda/handlers/create/main.go
-	${BUILD_CMD} bin/hello hello/main.go
 
 .PHONY: test
 test:

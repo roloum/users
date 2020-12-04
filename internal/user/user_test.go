@@ -3,22 +3,33 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"reflect"
 	"testing"
 
+	"github.com/roloum/users/internal/config"
 	"github.com/roloum/users/internal/test"
 )
 
+func init() {
+	fmt.Println("init user user_test.go")
+	test.SetEnvironment()
+}
+
 //TestCreateUser Tests the Create functionality
 func TestCreateUser(t *testing.T) {
+
+	var cfg config.Config
+	_ = cfg
 
 	tests := []struct {
 		desc      string
 		user      *NewUser
 		mockDBSvc *test.MockDynamoDB
 		err       error
+		tableName string
 	}{
 		{
 			desc: "CreateUser",
@@ -29,6 +40,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			mockDBSvc: &test.MockDynamoDB{},
 			err:       nil,
+			tableName: "User",
 		},
 		{
 			desc: ErrorFirstNameIsEmpty,
@@ -38,6 +50,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			mockDBSvc: &test.MockDynamoDB{},
 			err:       errors.New(ErrorFirstNameIsEmpty),
+			tableName: "User",
 		},
 		{
 			desc: ErrorLastNameIsEmpty,
@@ -47,6 +60,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			mockDBSvc: &test.MockDynamoDB{},
 			err:       errors.New(ErrorLastNameIsEmpty),
+			tableName: "User",
 		},
 		{
 			desc: ErrorEmailIsEmpty,
@@ -56,6 +70,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			mockDBSvc: &test.MockDynamoDB{},
 			err:       errors.New(ErrorEmailIsEmpty),
+			tableName: "User",
 		},
 		{
 			desc: ErrorInvalidEmail,
@@ -66,6 +81,18 @@ func TestCreateUser(t *testing.T) {
 			},
 			mockDBSvc: &test.MockDynamoDB{},
 			err:       errors.New(ErrorInvalidEmail),
+			tableName: "User",
+		},
+		{
+			desc: ErrorUserTableNameIsEmpty,
+			user: &NewUser{
+				FirstName: "Test",
+				LastName:  "User",
+				Email:     "yadayadayada",
+			},
+			mockDBSvc: &test.MockDynamoDB{},
+			err:       errors.New(ErrorUserTableNameIsEmpty),
+			tableName: "",
 		},
 	}
 
@@ -74,7 +101,9 @@ func TestCreateUser(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			_, err := Create(context.Background(), tc.mockDBSvc, tc.user, log)
+			//"User"
+			_, err := Create(context.Background(), tc.mockDBSvc, tc.user, tc.tableName,
+				log)
 			if !reflect.DeepEqual(err, tc.err) {
 				t.Errorf("Expected: %v. Received: %v", tc.err, err)
 			}

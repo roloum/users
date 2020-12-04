@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"log"
 	"strings"
 	"time"
@@ -31,8 +32,12 @@ type NewUser struct {
 //Create creates a new user in DynamoDB and returns a pointer to the User
 //object
 func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser,
-	log *log.Logger) (*User, error) {
+	tableName string, log *log.Logger) (*User, error) {
 	log.Printf("Creating user: %v\n", nu)
+
+	if tableName == "" {
+		return nil, errors.New(ErrorUserTableNameIsEmpty)
+	}
 
 	if err := validate.Struct(nu); err != nil {
 		return nil, getValidationError(err)
@@ -55,7 +60,7 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 			"active":    {BOOL: aws.Bool(u.Active)},
 		},
 		ConditionExpression: aws.String("attribute_not_exists(email)"),
-		TableName:           aws.String("User"),
+		TableName:           aws.String(tableName),
 	}
 
 	if _, err := dynamoDB.PutItemWithContext(ctx, input); err != nil {

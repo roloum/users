@@ -7,10 +7,13 @@ import (
 //ContextKey ...
 type ContextKey string
 
-//LOG ...
+//LOG Application Log
 const LOG = "log"
 
-//AWSSESSION ...
+//CONFIG Application configuration struct
+const CONFIG = "config"
+
+//DYNAMO AWS DynamoDB session
 const DYNAMO = "dynamo"
 
 // RootCmd represents the base command when called without any subcommands
