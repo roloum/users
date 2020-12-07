@@ -24,7 +24,8 @@ func run(log *log.Logger) error {
 
 	ctx := context.WithValue(context.Background(), cmd.ContextKey(cmd.LOG), log)
 
-	cfg, err := config.Load(log)
+	var cfg cmd.Configuration
+	err := config.Load(&cfg, log)
 	if err != nil {
 		return err
 	}

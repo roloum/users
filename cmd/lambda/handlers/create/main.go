@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -35,12 +36,22 @@ type (
 	//
 	// https://serverless.com/framework/docs/providers/aws/events/apigateway/#lambda-proxy-integration
 	Response events.APIGatewayProxyResponse
+
+	configuration struct {
+		AWS struct {
+			DynamoDB struct {
+				Table struct {
+					User string `required:"true"`
+				}
+			}
+		}
+	}
 )
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
 func Handler(ctx context.Context, dynamoDB *dynamodb.DynamoDB,
 	request events.APIGatewayProxyRequest,
-	cfg config.Config,
+	cfg configuration,
 	log *log.Logger) (Response, error) {
 
 	var body createRequest
@@ -92,10 +103,14 @@ func initHandler(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 	log := log.New(os.Stdout, "Users: ", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
-	cfg, err := config.Load(log)
+	//Config holds the configuration for the application
+	var cfg configuration
+	err := config.Load(&cfg, log)
 	if err != nil {
 		return Response{}, err
 	}
+
+	fmt.Println(cfg)
 
 	sess, err := uaws.GetSession(log)
 	if err != nil {

@@ -21,3 +21,14 @@ var RootCmd = &cobra.Command{
 	Use:   "users",
 	Short: "A CLI User Manager",
 }
+
+//Configuration stores the configuration for the cli commads
+type Configuration struct {
+	AWS struct {
+		DynamoDB struct {
+			Table struct {
+				User string `required:"true"`
+			}
+		}
+	}
+}

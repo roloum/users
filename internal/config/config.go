@@ -6,29 +6,17 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-//Config holds the configuration for the application
-type Config struct {
-	AWS struct {
-		DynamoDB struct {
-			Table struct {
-				User string `required:"true"`
-			}
-		}
-	}
-}
-
 //Load Loads the configuration into the Config struct
-func Load(log *log.Logger) (Config, error) {
+func Load(cfg interface{}, log *log.Logger) error {
 
 	log.Println("Loading application configuration")
-	var cfg Config
 
-	err := envconfig.Process("users", &cfg)
+	err := envconfig.Process("users", cfg)
 	if err != nil {
 		log.Printf("Error loading the configuration. %s\n", err.Error())
-		return cfg, err
+		return err
 	}
 
-	return cfg, nil
+	return nil
 
 }

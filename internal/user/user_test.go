@@ -3,26 +3,20 @@ package user
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"reflect"
 	"testing"
 
-	"github.com/roloum/users/internal/config"
 	"github.com/roloum/users/internal/test"
 )
 
 func init() {
-	fmt.Println("init user user_test.go")
 	test.SetEnvironment()
 }
 
 //TestCreateUser Tests the Create functionality
 func TestCreateUser(t *testing.T) {
-
-	var cfg config.Config
-	_ = cfg
 
 	tests := []struct {
 		desc      string
