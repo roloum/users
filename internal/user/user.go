@@ -5,11 +5,19 @@ import (
 	"errors"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+)
+
+const (
+	//ErrorDuplicateUser
+	ErrorDuplicateUser = "DuplicatedUser"
+
+	//ErrorUserTableNameIsEmpty Error describes AWS table name being empty
+	ErrorUserTableNameIsEmpty = "UserTableNameIsEmpty"
 )
 
 //User contains information about the user
@@ -48,22 +56,29 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 		FirstName: nu.FirstName,
 		LastName:  nu.LastName,
 		Active:    false,
-		Created:   time.Now().Format("2006-01-02"),
+		//Created:   time.Now().Format("2006-01-02"),
+		Created: "2006-01-02",
 	}
 
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
 			"email":     {S: aws.String(u.Email)},
-			"created":   {S: aws.String(u.Created)},
 			"firstName": {S: aws.String(u.FirstName)},
 			"lastName":  {S: aws.String(u.LastName)},
 			"active":    {BOOL: aws.Bool(u.Active)},
+			"created":   {S: aws.String(u.Created)},
 		},
 		ConditionExpression: aws.String("attribute_not_exists(email)"),
 		TableName:           aws.String(tableName),
 	}
 
 	if _, err := dynamoDB.PutItemWithContext(ctx, input); err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
+				return nil, errors.New(ErrorDuplicateUser)
+			}
+		}
+
 		return nil, err
 	}
 

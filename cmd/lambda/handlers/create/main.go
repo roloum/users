@@ -16,6 +16,11 @@ import (
 	"github.com/roloum/users/internal/user"
 )
 
+const (
+	//MsgUserCreated message returned when user is created successfully
+	MsgUserCreated = "UserCreated"
+)
+
 type (
 	// createRequest
 	createRequest struct {
@@ -70,7 +75,7 @@ func Handler(ctx context.Context, dynamoDB *dynamodb.DynamoDB,
 		return getResponse(http.StatusUnprocessableEntity, err.Error(), nil, log)
 	}
 
-	return getResponse(http.StatusCreated, "User created", u, log)
+	return getResponse(http.StatusCreated, MsgUserCreated, u, log)
 }
 
 // getResponse builds an API Gateway Response

@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-//GetSession returns
+//GetSession returns an AWS session
 func GetSession(log *log.Logger) (*session.Session, error) {
 
 	log.Printf("Retrieving AWS Session")
