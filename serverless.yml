@@ -106,10 +106,11 @@ functions:
    handler: bin/notifyUser
    events:
     - stream:
-    - stream:
         type: dynamodb
         arn:
           Fn::GetAtt: [userTable, StreamArn]
+# not found
+#     - stream: arn:aws:dynamodb:us-west-2:#{AWS.AccountId}:table/${self:provider.environment.USERS_AWS_DYNAMODB_TABLE_USER}/stream/2020-12-09T16:40:37.833
 
 ####   users:
 ####     handler: bin/users

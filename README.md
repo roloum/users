@@ -10,3 +10,7 @@ Lambda functions:
 
 DynamoDB tables:
  - User
+
+Serverless example
+ - https://github.com/serverless/examples/blob/master/aws-golang-dynamo-stream-to-elasticsearch/serverless.yml
+ - https://www.serverless.com/framework/docs/providers/aws/events/streams/
