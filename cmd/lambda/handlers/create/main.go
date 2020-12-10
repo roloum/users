@@ -1,3 +1,4 @@
+//Lambda function that creates an user in dynamoDB
 package main
 
 import (
@@ -106,7 +107,7 @@ func getResponse(statusCode int, message string, u *user.User, log *log.Logger) 
 func initHandler(ctx context.Context, request events.APIGatewayProxyRequest) (
 	Response, error) {
 
-	log := log.New(os.Stdout, "Users: ", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	log := log.New(os.Stdout, "createUser: ", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
 	//Config holds the configuration for the application
 	var cfg configuration

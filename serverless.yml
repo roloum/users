@@ -31,7 +31,7 @@ provider:
         - dynamodb:Scan
         - dynamodb:UpdateItem
         - dynamodb:PutItem
-      Resource: "arn:aws:dynamodb:*:*:table/User"
+      Resource: "arn:aws:dynamodb:*:*:table/${self:provider.environment.USERS_AWS_DYNAMODB_TABLE_USER}"
 # you can overwrite defaults here
 #  stage: dev
   region: us-west-2
@@ -39,13 +39,16 @@ provider:
 resources:
   Resources:
     userTable:
+
       Type: AWS::DynamoDB::Table
-      DeletionPolicy: Retain
+      # DeletionPolicy: Retain
       Properties:
+        TableName: ${self:provider.environment.USERS_AWS_DYNAMODB_TABLE_USER}
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:provider.environment.USERS_AWS_DYNAMODB_TABLE_USER}
         AttributeDefinitions:
           - AttributeName: email
             AttributeType: S
@@ -99,6 +102,15 @@ functions:
      - http:
          path: /users/create
          method: post
+ notifyUser:
+   handler: bin/notifyUser
+   events:
+    - stream:
+    - stream:
+        type: dynamodb
+        arn:
+          Fn::GetAtt: [userTable, StreamArn]
+
 ####   users:
 ####     handler: bin/users
 ####     events:
