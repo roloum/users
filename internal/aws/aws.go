@@ -12,12 +12,12 @@ import (
 )
 
 //GetSession returns an AWS session
-func GetSession(log *log.Logger) (*session.Session, error) {
+func GetSession(region string, log *log.Logger) (*session.Session, error) {
 
 	log.Printf("Retrieving AWS Session")
 
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-2"),
+		Region: aws.String(region),
 	})
 	if err != nil {
 		return nil, err

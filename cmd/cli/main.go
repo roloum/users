@@ -31,7 +31,7 @@ func run(log *log.Logger) error {
 	}
 	ctx = context.WithValue(ctx, cmd.ContextKey(cmd.CONFIG), cfg)
 
-	sess, err := uaws.GetSession(log)
+	sess, err := uaws.GetSession(cfg.AWS.Region, log)
 	if err != nil {
 		return err
 	}

@@ -30,5 +30,6 @@ type Configuration struct {
 				User string `required:"true"`
 			}
 		}
+		Region string `required:"true"`
 	}
 }

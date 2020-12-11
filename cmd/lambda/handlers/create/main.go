@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -50,6 +49,7 @@ type (
 					User string `required:"true"`
 				}
 			}
+			Region string `required:"true"`
 		}
 	}
 )
@@ -116,9 +116,7 @@ func initHandler(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return Response{}, err
 	}
 
-	fmt.Println(cfg)
-
-	sess, err := uaws.GetSession(log)
+	sess, err := uaws.GetSession(cfg.AWS.Region, log)
 	if err != nil {
 		return Response{}, err
 	}
