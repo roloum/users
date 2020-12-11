@@ -27,28 +27,26 @@ provider:
     USERS_AWS_DYNAMODB_TABLE_USER: ${env:USERS_AWS_DYNAMODB_TABLE_USER}
     USERS_AWS_REGION: ${env:USERS_AWS_REGION}
     USERS_EMAIL_SENDER: ${env:USERS_EMAIL_SENDER}
+
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - dynamodb:Scan
-        - dynamodb:UpdateItem
         - dynamodb:PutItem
-#        - ses:SendMail
-      Resource: "arn:aws:dynamodb:*:*:table/${self:provider.environment.USERS_AWS_DYNAMODB_TABLE_USER}"
-#      Condition:
-#        StringEquals:
-#          ses:FromAddress:
-#            - "${self:provider.environment.USERS_EMAIL_SENDER}"
-
+      Resource:
+        - Fn::GetAtt: [userTable, Arn]
+    - Effect: "Allow"
+      Action:
+        - ses:SendEmail
+        - ses:SendRawEmail
+      Resource: "*"
 
 # you can overwrite defaults here
 #  stage: dev
-  region: us-west-2
+  region: ${self:provider.environment.USERS_AWS_REGION}
 
 resources:
   Resources:
     userTable:
-
       Type: AWS::DynamoDB::Table
       # DeletionPolicy: Retain
       Properties:
@@ -75,21 +73,6 @@ resources:
               # ReadCapacityUnits: 1
               # WriteCapacityUnits: 1
 
-# you can add statements to the Lambda function's IAM Role here
-#  iamRoleStatements:
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:ListBucket"
-#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:PutObject"
-#      Resource:
-#        Fn::Join:
-#          - ""
-#          - - "arn:aws:s3:::"
-#            - "Ref" : "ServerlessDeploymentBucket"
-#            - "/*"
 
 # you can define service wide environment variables here
 #  environment:
@@ -118,28 +101,7 @@ functions:
         type: dynamodb
         arn:
           Fn::GetAtt: [userTable, StreamArn]
-# not found
-#     - stream: arn:aws:dynamodb:us-west-2:#{AWS.AccountId}:table/${self:provider.environment.USERS_AWS_DYNAMODB_TABLE_USER}/stream/2020-12-09T16:40:37.833
 
-####   users:
-####     handler: bin/users
-####     events:
-####       - http:
-####           path: users
-####           method: get
-
-#  hello:
-#    handler: bin/hello
-#    events:
-#      - http:
-#          path: hello
-#          method: get
-#   world:
-#     handler: bin/world
-#     events:
-#       - http:
-#           path: world
-#           method: get
 
 
 ############################################
