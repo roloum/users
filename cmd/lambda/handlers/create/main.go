@@ -4,9 +4,11 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -57,12 +59,11 @@ type (
 // Handler is our lambda handler invoked by the `lambda.Start` function call
 func Handler(ctx context.Context, dynamoDB *dynamodb.DynamoDB,
 	request events.APIGatewayProxyRequest,
-	cfg configuration,
-	log *log.Logger) (Response, error) {
+	cfg configuration) (Response, error) {
 
 	var body createRequest
 	if err := json.Unmarshal([]byte(request.Body), &body); err != nil {
-		return getResponse(http.StatusUnprocessableEntity, err.Error(), nil, log)
+		return getResponse(http.StatusUnprocessableEntity, err.Error(), nil)
 	}
 
 	newUser := &user.NewUser{
@@ -71,16 +72,16 @@ func Handler(ctx context.Context, dynamoDB *dynamodb.DynamoDB,
 		LastName:  body.LastName,
 	}
 
-	u, err := user.Create(ctx, dynamoDB, newUser, "User", log)
+	u, err := user.Create(ctx, dynamoDB, newUser, "User")
 	if err != nil {
-		return getResponse(http.StatusUnprocessableEntity, err.Error(), nil, log)
+		return getResponse(http.StatusUnprocessableEntity, err.Error(), nil)
 	}
 
-	return getResponse(http.StatusCreated, MsgUserCreated, u, log)
+	return getResponse(http.StatusCreated, MsgUserCreated, u)
 }
 
 // getResponse builds an API Gateway Response
-func getResponse(statusCode int, message string, u *user.User, log *log.Logger) (
+func getResponse(statusCode int, message string, u *user.User) (
 	Response, error) {
 
 	headers := map[string]string{
@@ -107,21 +108,22 @@ func getResponse(statusCode int, message string, u *user.User, log *log.Logger) 
 func initHandler(ctx context.Context, request events.APIGatewayProxyRequest) (
 	Response, error) {
 
-	log := log.New(os.Stdout, "createUser: ", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	//Config holds the configuration for the application
 	var cfg configuration
-	err := config.Load(&cfg, log)
+	err := config.Load(&cfg)
 	if err != nil {
 		return Response{}, err
 	}
 
-	sess, err := uaws.GetSession(cfg.AWS.Region, log)
+	sess, err := uaws.GetSession(cfg.AWS.Region)
 	if err != nil {
 		return Response{}, err
 	}
 
-	return Handler(ctx, uaws.GetDynamoDB(sess), request, cfg, log)
+	return Handler(ctx, uaws.GetDynamoDB(sess), request, cfg)
 
 }
 

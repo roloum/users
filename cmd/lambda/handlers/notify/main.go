@@ -7,8 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -33,10 +35,10 @@ type configuration struct {
 }
 
 func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
-	sender string, log *log.Logger) error {
+	sender string) error {
 
 	for _, v := range e.Records {
-		log.Printf("Event name: %s\n", v.EventName)
+		log.Debug().Msgf("Event name: %s\n", v.EventName)
 
 		hostname, err := os.Hostname()
 		if err != nil {
@@ -48,12 +50,12 @@ func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
 
 			var u user.User
 
-			log.Println("Unmarshalling user struct")
+			log.Debug().Msg("Unmarshalling user struct")
 
 			//Unmarshal Image into user struct
 			err := uaws.UnmarshalStreamImage(v.Change.NewImage, &u)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal().Msg(err.Error())
 			}
 
 			activationURL := fmt.Sprintf("%s/dev/users/activate", hostname)
@@ -64,9 +66,8 @@ func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
 				fmt.Sprintf("Click here to Activate: \"%s\"", activationURL),
 				u.Email,
 				sender,
-				svc,
-				log); err != nil {
-				log.Fatal(err)
+				svc); err != nil {
+				log.Fatal().Msg(err.Error())
 			}
 		case "MODIFY":
 		}
@@ -76,9 +77,12 @@ func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
 }
 
 func sendEmail(subject, htmlBody, textBody, recipient, sender string,
-	svc *ses.SES, log *log.Logger) error {
-	log.Printf("Sending email:\nsender: %s,\nemail: %s,\nSubject: %s,\nBody: %s\n",
-		sender, recipient, subject, textBody)
+	svc *ses.SES) error {
+	log.Debug().Str("sender", sender).
+		Str("nemail", recipient).
+		Str("subject", subject).
+		Str("body", textBody).
+		Msg("Sending email")
 
 	// Email input
 	input := &ses.SendEmailInput{
@@ -117,29 +121,30 @@ func sendEmail(subject, htmlBody, textBody, recipient, sender string,
 		return err
 	}
 
-	log.Println("Email sent")
-	log.Println(result)
+	log.Debug().Msgf("%+v", result)
+	log.Info().Msg("Email sent")
 
 	return nil
 }
 
 func initHandler(ctx context.Context, e events.DynamoDBEvent) error {
 
-	log := log.New(os.Stdout, "notifyUser: ", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	//Config holds the configuration for the application
 	var cfg configuration
-	err := config.Load(&cfg, log)
+	err := config.Load(&cfg)
 	if err != nil {
 		return err
 	}
 
-	sess, err := uaws.GetSession(cfg.AWS.Region, log)
+	sess, err := uaws.GetSession(cfg.AWS.Region)
 	if err != nil {
 		return err
 	}
 
-	return handler(ctx, e, ses.New(sess), cfg.Email.Sender, log)
+	return handler(ctx, e, ses.New(sess), cfg.Email.Sender)
 
 }
 
