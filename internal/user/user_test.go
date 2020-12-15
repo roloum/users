@@ -3,15 +3,15 @@ package user
 import (
 	"context"
 	"errors"
-	"io/ioutil"
-	"log"
 	"reflect"
 	"testing"
 
 	"github.com/roloum/users/internal/test"
+	"github.com/rs/zerolog"
 )
 
 func init() {
+	zerolog.SetGlobalLevel(zerolog.Disabled)
 	test.SetEnvironment()
 }
 
@@ -90,14 +90,10 @@ func TestCreateUser(t *testing.T) {
 		},
 	}
 
-	//Do not log
-	log := log.New(ioutil.Discard, "", 0)
-
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
 			//"User"
-			_, err := Create(context.Background(), tc.mockDBSvc, tc.user, tc.tableName,
-				log)
+			_, err := Create(context.Background(), tc.mockDBSvc, tc.user, tc.tableName)
 			if !reflect.DeepEqual(err, tc.err) {
 				t.Errorf("Expected: %v. Received: %v", tc.err, err)
 			}

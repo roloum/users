@@ -2,7 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/roloum/users/internal/user"
@@ -21,12 +22,11 @@ var addCmd = &cobra.Command{
 		lastName, _ := cmd.Flags().GetString("last-name")
 
 		ctx := cmd.Context()
-		log := ctx.Value(ContextKey(LOG)).(*log.Logger)
-		log.Println("Executing the add command")
+		log.Info().Msg("Executing the add command")
 
 		cfg, ok := ctx.Value(ContextKey(CONFIG)).(Configuration)
 		if !ok {
-			return fmt.Errorf("Missing DynamoDB connection")
+			return fmt.Errorf("Missing configuration")
 		}
 
 		dynamoDB, ok := ctx.Value(ContextKey(DYNAMO)).(*dynamodb.DynamoDB)
@@ -40,12 +40,13 @@ var addCmd = &cobra.Command{
 			LastName:  lastName,
 		}
 
-		user, err := user.Create(ctx, dynamoDB, nu, cfg.AWS.DynamoDB.Table.User, log)
+		_, err := user.Create(ctx, dynamoDB, nu, cfg.AWS.DynamoDB.Table.User)
 		if err != nil {
+			log.Error().Msg(err.Error())
 			return err
 		}
 
-		log.Printf("Created: %v\n", user)
+		log.Info().Msg("User created")
 		return nil
 
 	},

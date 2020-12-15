@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -52,21 +53,21 @@ type NewUser struct {
 //Create creates a new user in DynamoDB and returns a pointer to the User
 //object
 func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser,
-	tableName string, log *log.Logger) (*User, error) {
-	log.Printf("Creating user: %v\n", nu)
+	tableName string) (*User, error) {
+	log.Info().Msgf("Creating user: %s", nu.Email)
 
 	if tableName == "" {
 		return nil, errors.New(ErrorUserTableNameIsEmpty)
 	}
 
-	log.Println("Validation NewUser struct")
+	log.Debug().Msg("Validating NewUser struct")
 
 	if err := validate.Struct(nu); err != nil {
 		return nil, getValidationError(err)
 	}
 
 	userID := uuid.New()
-	log.Printf("Generated UUID: %s", userID.String())
+	log.Debug().Msgf("Generated UUID: %s", userID.String())
 
 	u := &User{
 		Email:     nu.Email,
@@ -77,7 +78,7 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 		Created:   time.Now().Format("2006-01-02"),
 	}
 
-	log.Printf("Creating row: %+v", u)
+	log.Debug().Msgf("Creating row: %+v", u)
 
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
@@ -97,7 +98,6 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 
 	if _, err := dynamoDB.PutItemWithContext(ctx, input); err != nil {
 
-		fmt.Printf("Error: %v", err)
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
 				return nil, errors.New(ErrorDuplicateUser)
@@ -107,7 +107,6 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 		return nil, err
 	}
 
-	log.Printf("User created: %v\n", *u)
 	return u, nil
 }
 

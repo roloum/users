@@ -2,36 +2,39 @@ package main
 
 import (
 	"context"
-	"log"
-
 	"os"
 
 	"github.com/roloum/users/cmd/cli/internal/cmd"
 	uaws "github.com/roloum/users/internal/aws"
 	"github.com/roloum/users/internal/config"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
-	log := log.New(os.Stdout, "Users: ", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
-	if err := run(log); err != nil {
-		log.Printf("Main: %s", err)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+
+	if err := run(); err != nil {
+		log.Error().Msgf("Main: %s", err)
 		os.Exit(1)
 	}
+
 }
 
-func run(log *log.Logger) error {
-
-	ctx := context.WithValue(context.Background(), cmd.ContextKey(cmd.LOG), log)
+func run() error {
 
 	var cfg cmd.Configuration
-	err := config.Load(&cfg, log)
+	err := config.Load(&cfg)
 	if err != nil {
 		return err
 	}
-	ctx = context.WithValue(ctx, cmd.ContextKey(cmd.CONFIG), cfg)
+	ctx := context.WithValue(context.Background(), cmd.ContextKey(cmd.CONFIG), cfg)
 
-	sess, err := uaws.GetSession(cfg.AWS.Region, log)
+	sess, err := uaws.GetSession(cfg.AWS.Region)
 	if err != nil {
 		return err
 	}

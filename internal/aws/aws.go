@@ -2,7 +2,8 @@ package aws
 
 import (
 	"encoding/json"
-	"log"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,9 +13,9 @@ import (
 )
 
 //GetSession returns an AWS session
-func GetSession(region string, log *log.Logger) (*session.Session, error) {
+func GetSession(region string) (*session.Session, error) {
 
-	log.Printf("Retrieving AWS Session")
+	log.Debug().Msg("Retrieving AWS Session")
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),

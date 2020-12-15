@@ -7,9 +7,6 @@ import (
 //ContextKey ...
 type ContextKey string
 
-//LOG Application Log
-const LOG = "log"
-
 //CONFIG Application configuration struct
 const CONFIG = "config"
 
