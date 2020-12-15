@@ -47,6 +47,9 @@ func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
 		case "INSERT":
 
 			var u user.User
+
+			log.Println("Unmarshalling user struct")
+
 			//Unmarshal Image into user struct
 			err := uaws.UnmarshalStreamImage(v.Change.NewImage, &u)
 			if err != nil {
@@ -74,7 +77,7 @@ func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
 
 func sendEmail(subject, htmlBody, textBody, recipient, sender string,
 	svc *ses.SES, log *log.Logger) error {
-	log.Printf("Sending email:\nsender: %s, email: %s,\nSubject: %s,\nBody: %s\n",
+	log.Printf("Sending email:\nsender: %s,\nemail: %s,\nSubject: %s,\nBody: %s\n",
 		sender, recipient, subject, textBody)
 
 	// Email input
