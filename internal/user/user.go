@@ -3,17 +3,29 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
-	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+
+	"github.com/google/uuid"
 )
 
 const (
-	//ErrorDuplicateUser
+	//DynamoDBPrefixUser Prexix added to the primary key
+	DynamoDBPrefixUser = "USER"
+
+	//DynamoDBPrefixProfile Prefix added to the sort key
+	DynamoDBPrefixProfile = "PROFILE"
+
+	//DynamoDBTypeUser identifies the type of row in dynamoDB
+	DynamoDBTypeUser = "User"
+
+	//ErrorDuplicateUser Returned when the user already exists in the table
 	ErrorDuplicateUser = "DuplicatedUser"
 
 	//ErrorUserTableNameIsEmpty Error describes AWS table name being empty
@@ -23,9 +35,9 @@ const (
 //User contains information about the user
 type User struct {
 	ID        string `json:"id,omitempty"`
-	Email     string `json:"email,omitempty"`
 	FirstName string `json:"firstName,omitempty"`
 	LastName  string `json:"lastName,omitempty"`
+	Email     string `json:"email,omitempty"`
 	Active    bool   `json:"active,omitempty"`
 	Created   string `json:"created,omitempty"`
 }
@@ -47,32 +59,45 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 		return nil, errors.New(ErrorUserTableNameIsEmpty)
 	}
 
+	log.Println("Validation NewUser struct")
+
 	if err := validate.Struct(nu); err != nil {
 		return nil, getValidationError(err)
 	}
 
+	userID := uuid.New()
+	log.Printf("Generated UUID: %s", userID.String())
+
 	u := &User{
-		Email:     strings.ToLower(nu.Email),
+		Email:     nu.Email,
+		ID:        userID.String(),
 		FirstName: nu.FirstName,
 		LastName:  nu.LastName,
 		Active:    false,
-		//Created:   time.Now().Format("2006-01-02"),
-		Created: "2006-01-02",
+		Created:   time.Now().Format("2006-01-02"),
 	}
+
+	log.Printf("Creating row: %+v", u)
 
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
-			"email":     {S: aws.String(u.Email)},
+			"pk":        {S: aws.String(u.getPK())},
+			"sk":        {S: aws.String(u.getSK())},
+			"id":        {S: aws.String(u.ID)},
 			"firstName": {S: aws.String(u.FirstName)},
 			"lastName":  {S: aws.String(u.LastName)},
+			"email":     {S: aws.String(u.Email)},
 			"active":    {BOOL: aws.Bool(u.Active)},
 			"created":   {S: aws.String(u.Created)},
+			"type":      {S: aws.String(DynamoDBTypeUser)},
 		},
-		ConditionExpression: aws.String("attribute_not_exists(email)"),
+		ConditionExpression: aws.String("attribute_not_exists(pk) and attribute_not_exists(sk)"),
 		TableName:           aws.String(tableName),
 	}
 
 	if _, err := dynamoDB.PutItemWithContext(ctx, input); err != nil {
+
+		fmt.Printf("Error: %v", err)
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
 				return nil, errors.New(ErrorDuplicateUser)
@@ -84,4 +109,12 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 
 	log.Printf("User created: %v\n", *u)
 	return u, nil
+}
+
+func (u *User) getPK() string {
+	return fmt.Sprintf("%s#%s", DynamoDBPrefixUser, u.Email)
+}
+
+func (u *User) getSK() string {
+	return fmt.Sprintf("%s#", DynamoDBPrefixProfile)
 }
