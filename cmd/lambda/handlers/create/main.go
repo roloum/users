@@ -5,9 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -107,9 +105,6 @@ func getResponse(statusCode int, message string, u *user.User) (
 
 func initHandler(ctx context.Context, request events.APIGatewayProxyRequest) (
 	Response, error) {
-
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	//Config holds the configuration for the application
 	var cfg configuration

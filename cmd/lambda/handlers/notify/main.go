@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -128,9 +127,6 @@ func sendEmail(subject, htmlBody, textBody, recipient, sender string,
 }
 
 func initHandler(ctx context.Context, e events.DynamoDBEvent) error {
-
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	//Config holds the configuration for the application
 	var cfg configuration
