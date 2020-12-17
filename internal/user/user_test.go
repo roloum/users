@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"github.com/aws/aws-lambda-go/events"
 
 	"github.com/roloum/users/internal/test"
 	"github.com/rs/zerolog"
@@ -100,4 +101,36 @@ func TestCreateUser(t *testing.T) {
 		})
 	}
 
+}
+
+func TestIsUserProfileKeys(t *testing.T) {
+	tests := []struct {
+		desc string
+		keys map[string]events.DynamoDBAttributeValue
+		expected bool
+	}{
+		{
+			desc: "profileKeys",
+			keys: map[string]events.DynamoDBAttributeValue{
+					"pk": events.NewStringAttribute("USER#"),
+					"sk": events.NewStringAttribute("PROFILE#"),
+				},
+			expected: true,
+		},
+		{
+			desc: "differentKeys",
+			keys: map[string]events.DynamoDBAttributeValue{
+					"pk": events.NewStringAttribute("USER#"),
+					"sk": events.NewStringAttribute("DIFF#"),
+				},
+			expected: false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			if result := IsUserProfileKeys(tc.keys); result != tc.expected {
+				t.Errorf("Expected: %v. Received: %v", tc.expected, result)
+			}
+		})
+	}
 }
