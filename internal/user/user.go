@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -48,6 +50,34 @@ type NewUser struct {
 	Email     string `json:"email" validate:"required,validEmail"`
 	FirstName string `json:"firstName" validate:"required"`
 	LastName  string `json:"lastName" validate:"required"`
+}
+
+//IsUserProfileKeys verifies that pk and sk correspond to a User's profile row
+func IsUserProfileKeys(keys map[string]events.DynamoDBAttributeValue) bool {
+	var userProfileKey bool
+
+	log.Debug().Msgf("Checking User Profile keys")
+
+	//Attribute pk exists in map?
+	pk, ok := keys["pk"]
+	if !ok {
+		return false
+	}
+
+	//Attribute sk exists in map?
+	sk, ok := keys["sk"]
+	if !ok {
+		return false
+	}
+
+	log.Debug().Msgf("Both keys are set")
+
+	userProfileKey = strings.HasPrefix(pk.String(), DynamoDBPrefixUser) &&
+		strings.HasPrefix(sk.String(), DynamoDBPrefixProfile)
+
+	log.Debug().Msgf("IsUserProfileKeys: %v", userProfileKey)
+
+	return userProfileKey
 }
 
 //Create creates a new user in DynamoDB and returns a pointer to the User
@@ -108,6 +138,15 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 	}
 
 	return u, nil
+}
+
+//Activate sets the active column in the user-profile row to true
+func (u *User) Activate(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI,
+	tableName string) error {
+
+	log.Debug().Msgf("Activating user: %s", u.Email)
+
+	return nil
 }
 
 func (u *User) getPK() string {

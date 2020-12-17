@@ -39,6 +39,11 @@ func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
 	for _, v := range e.Records {
 		log.Debug().Msgf("Event name: %s\n", v.EventName)
 
+		log.Debug().Msgf("Record keys: %+v", v.Change.Keys)
+		if !user.IsUserProfileKeys(v.Change.Keys) {
+			continue
+		}
+
 		hostname, err := os.Hostname()
 		if err != nil {
 			return err

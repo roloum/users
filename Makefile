@@ -8,6 +8,7 @@ build: gomodgen
 	export GO111MODULE=on
 	${BUILD_CMD} bin/createUser cmd/lambda/handlers/create/main.go
 	${BUILD_CMD} bin/notifyUser cmd/lambda/handlers/notify/main.go
+	${BUILD_CMD} bin/activateUser cmd/lambda/handlers/activate/main.go
 
 .PHONY: test
 test:

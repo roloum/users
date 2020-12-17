@@ -82,3 +82,9 @@ functions:
         type: dynamodb
         arn:
           Fn::GetAtt: [userTable, StreamArn]
+ activeUser:
+   handler: bin/activateUser
+   events:
+     - http:
+         path: /users/activate
+         method: get

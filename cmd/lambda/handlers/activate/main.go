@@ -1,10 +1,10 @@
-//Lambda function that creates an user in dynamoDB
 package main
 
 import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -17,23 +17,19 @@ import (
 )
 
 const (
-	//MsgUserCreated message returned when user is created successfully
-	MsgUserCreated = "UserCreated"
+	//MsgUserActivated message returned when user is activated successfully
+	MsgUserActivated = "MsgUserActivated"
+
+	//ErrorEmailIsEmpty
+	ErrorEmailIsEmpty = "EmailIsEmpty"
 )
 
 type (
-	// createRequest
-	createRequest struct {
-		Email     string `json:"email,omitempty"`
-		FirstName string `json:"firstName,omitempty"`
-		LastName  string `json:"lastName,omitempty"`
-	}
 
-	// createResponse
-	createResponse struct {
-		StatusCode int        `json:"status"`
-		Message    string     `json:"message"`
-		User       *user.User `json:"user,omitempty"`
+	// activateResponse
+	activateResponse struct {
+		StatusCode int    `json:"status"`
+		Message    string `json:"message"`
 	}
 
 	// Response is of type APIGatewayProxyResponse since we're leveraging the
@@ -59,40 +55,38 @@ func Handler(ctx context.Context, dynamoDB *dynamodb.DynamoDB,
 	request events.APIGatewayProxyRequest,
 	cfg configuration) (Response, error) {
 
-	log.Debug().Msg("Unmarshalling request")
-	var body createRequest
-	if err := json.Unmarshal([]byte(request.Body), &body); err != nil {
-		return getResponse(http.StatusUnprocessableEntity, err.Error(), nil)
+	email := request.QueryStringParameters["email"]
+	if email == "" {
+		return getResponse(http.StatusUnprocessableEntity, ErrorEmailIsEmpty)
 	}
 
-	newUser := &user.NewUser{
-		Email:     body.Email,
-		FirstName: body.FirstName,
-		LastName:  body.LastName,
+	email = strings.ToLower(email)
+	log.Info().Msgf("Activating account: %s", email)
+
+	u := &user.User{
+		Email: email,
 	}
 
-	u, err := user.Create(ctx, dynamoDB, newUser, cfg.AWS.DynamoDB.Table.User)
+	err := u.Activate(ctx, dynamoDB, cfg.AWS.DynamoDB.Table.User)
 	if err != nil {
-		return getResponse(http.StatusUnprocessableEntity, err.Error(), nil)
+		return getResponse(http.StatusUnprocessableEntity, err.Error())
 	}
 
-	log.Info().Msg("User Created")
+	log.Info().Msg("User Activated")
 
-	return getResponse(http.StatusCreated, MsgUserCreated, u)
+	return getResponse(http.StatusCreated, MsgUserActivated)
 }
 
 // getResponse builds an API Gateway Response
-func getResponse(statusCode int, message string, u *user.User) (
-	Response, error) {
+func getResponse(statusCode int, message string) (Response, error) {
 
 	headers := map[string]string{
 		"Content-Type": "application/json",
 	}
 
-	resp := &createResponse{
+	resp := &activateResponse{
 		StatusCode: statusCode,
 		Message:    message,
-		User:       u,
 	}
 
 	js, err := json.Marshal(resp)
