@@ -42,7 +42,6 @@ var addCmd = &cobra.Command{
 
 		_, err := user.Create(ctx, dynamoDB, nu, cfg.AWS.DynamoDB.Table.User)
 		if err != nil {
-			log.Error().Msg(err.Error())
 			return err
 		}
 

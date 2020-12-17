@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+
 	"github.com/aws/aws-lambda-go/events"
 
 	"github.com/roloum/users/internal/test"
@@ -105,24 +106,24 @@ func TestCreateUser(t *testing.T) {
 
 func TestIsUserProfileKeys(t *testing.T) {
 	tests := []struct {
-		desc string
-		keys map[string]events.DynamoDBAttributeValue
+		desc     string
+		keys     map[string]events.DynamoDBAttributeValue
 		expected bool
 	}{
 		{
 			desc: "profileKeys",
 			keys: map[string]events.DynamoDBAttributeValue{
-					"pk": events.NewStringAttribute("USER#"),
-					"sk": events.NewStringAttribute("PROFILE#"),
-				},
+				"pk": events.NewStringAttribute("USER#"),
+				"sk": events.NewStringAttribute("PROFILE#"),
+			},
 			expected: true,
 		},
 		{
 			desc: "differentKeys",
 			keys: map[string]events.DynamoDBAttributeValue{
-					"pk": events.NewStringAttribute("USER#"),
-					"sk": events.NewStringAttribute("DIFF#"),
-				},
+				"pk": events.NewStringAttribute("USER#"),
+				"sk": events.NewStringAttribute("DIFF#"),
+			},
 			expected: false,
 		},
 	}

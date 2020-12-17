@@ -25,6 +25,9 @@ const (
 	//DynamoDBPrefixProfile Prefix added to the sort key
 	DynamoDBPrefixProfile = "PROFILE"
 
+	//DynamoDBPrefixToken Prefix added to the sort key
+	DynamoDBPrefixToken = "TOKEN"
+
 	//DynamoDBTypeUser identifies the type of row in dynamoDB
 	DynamoDBTypeUser = "User"
 
@@ -80,9 +83,11 @@ func IsUserProfileKeys(keys map[string]events.DynamoDBAttributeValue) bool {
 	return userProfileKey
 }
 
-//Create creates a new user in DynamoDB and returns a pointer to the User
-//object
-func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser,
+//Create creates a new user in DynamoDB and returns a pointer to the User object
+//It inserts two rows in the table:
+// - pk: USER#[email], sk: PROFILE# ... user profile row
+// - pk: USER#[email], sk: TOKEN#[token] ... activation token (using id for now)
+func Create(ctx context.Context, svc dynamodbiface.DynamoDBAPI, nu *NewUser,
 	tableName string) (*User, error) {
 	log.Info().Msgf("Creating user: %s", nu.Email)
 
@@ -110,26 +115,63 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 
 	log.Debug().Msgf("Creating row: %+v", u)
 
-	input := &dynamodb.PutItemInput{
-		Item: map[string]*dynamodb.AttributeValue{
-			"pk":        {S: aws.String(u.getPK())},
-			"sk":        {S: aws.String(u.getSK())},
-			"id":        {S: aws.String(u.ID)},
-			"firstName": {S: aws.String(u.FirstName)},
-			"lastName":  {S: aws.String(u.LastName)},
-			"email":     {S: aws.String(u.Email)},
-			"active":    {BOOL: aws.Bool(u.Active)},
-			"created":   {S: aws.String(u.Created)},
-			"type":      {S: aws.String(DynamoDBTypeUser)},
+	_, err := svc.TransactWriteItemsWithContext(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []*dynamodb.TransactWriteItem{
+			{
+				Put: &dynamodb.Put{
+					Item: map[string]*dynamodb.AttributeValue{
+						"pk":        {S: aws.String(u.getUserPK())},
+						"sk":        {S: aws.String(u.getProfileSK())},
+						"id":        {S: aws.String(u.ID)},
+						"firstName": {S: aws.String(u.FirstName)},
+						"lastName":  {S: aws.String(u.LastName)},
+						"email":     {S: aws.String(u.Email)},
+						"active":    {BOOL: aws.Bool(u.Active)},
+						"created":   {S: aws.String(u.Created)},
+						"type":      {S: aws.String(DynamoDBTypeUser)},
+					},
+					TableName:           aws.String(tableName),
+					ConditionExpression: aws.String("attribute_not_exists(pk) and attribute_not_exists(sk)"),
+				},
+			},
+			{
+				Put: &dynamodb.Put{
+					Item: map[string]*dynamodb.AttributeValue{
+						"pk": {S: aws.String(u.getUserPK())},
+						"sk": {S: aws.String(u.getTokenSK())},
+					},
+					TableName: aws.String(tableName),
+				},
+			},
 		},
-		ConditionExpression: aws.String("attribute_not_exists(pk) and attribute_not_exists(sk)"),
-		TableName:           aws.String(tableName),
-	}
+	})
 
-	if _, err := dynamoDB.PutItemWithContext(ctx, input); err != nil {
+	//	input := &dynamodb.PutItemInput{
+	//		Item: map[string]*dynamodb.AttributeValue{
+	//			"pk":        {S: aws.String(u.getUserPK())},
+	//			"sk":        {S: aws.String(u.getProfileSK())},
+	//			"id":        {S: aws.String(u.ID)},
+	//			"firstName": {S: aws.String(u.FirstName)},
+	//			"lastName":  {S: aws.String(u.LastName)},
+	//			"email":     {S: aws.String(u.Email)},
+	//			"active":    {BOOL: aws.Bool(u.Active)},
+	//			"created":   {S: aws.String(u.Created)},
+	//			"type":      {S: aws.String(DynamoDBTypeUser)},
+	//		},
+	//		ConditionExpression: aws.String("attribute_not_exists(pk) and attribute_not_exists(sk)"),
+	//		TableName:           aws.String(tableName),
+	//	}
+
+	if err != nil {
+
+		log.Debug().Msg(err.Error())
 
 		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
+
+			// TODO:
+			//Error returned is TransactionCanceledException. Still trying to figure
+			//out if there's a way to extract the Cancellation reasons
+			if aerr.Code() == dynamodb.ErrCodeTransactionCanceledException {
 				return nil, errors.New(ErrorDuplicateUser)
 			}
 		}
@@ -141,7 +183,7 @@ func Create(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI, nu *NewUser
 }
 
 //Activate sets the active column in the user-profile row to true
-func (u *User) Activate(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI,
+func (u *User) Activate(ctx context.Context, svc dynamodbiface.DynamoDBAPI,
 	tableName string) error {
 
 	log.Debug().Msgf("Activating user: %s", u.Email)
@@ -149,10 +191,15 @@ func (u *User) Activate(ctx context.Context, dynamoDB dynamodbiface.DynamoDBAPI,
 	return nil
 }
 
-func (u *User) getPK() string {
+func (u *User) getUserPK() string {
 	return fmt.Sprintf("%s#%s", DynamoDBPrefixUser, u.Email)
 }
 
-func (u *User) getSK() string {
+func (u *User) getProfileSK() string {
 	return fmt.Sprintf("%s#", DynamoDBPrefixProfile)
+}
+
+//getTokenSK forms Token SK with prefix and user ID
+func (u *User) getTokenSK() string {
+	return fmt.Sprintf("%s#%s", DynamoDBPrefixToken, u.ID)
 }
