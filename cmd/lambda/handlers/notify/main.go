@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
+	"net/http"
 
 	"github.com/rs/zerolog/log"
 
@@ -29,28 +29,24 @@ type configuration struct {
 		Region string `required:"true"`
 	}
 	Email struct {
-		Sender string `required:"true"`
+		Sender   string `required:"true"`
+		Activate struct {
+			URL string `required:"true"`
+		}
 	}
 }
 
 func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
-	sender string) error {
+	cfg configuration) error {
 
 	for _, v := range e.Records {
 		log.Debug().Msgf("Event name: %s\n", v.EventName)
 
 		log.Debug().Msgf("Record keys: %+v", v.Change.Keys)
-		if !user.IsUserProfileKeys(v.Change.Keys) {
-			continue
-		}
 
-		hostname, err := os.Hostname()
-		if err != nil {
-			return err
-		}
-
-		switch v.EventName {
-		case "INSERT":
+		//New Token row? Send activation email
+		if user.IsUserTokenKeys(v.Change.Keys) &&
+			events.DynamoDBOperationType(v.EventName) == events.DynamoDBOperationTypeInsert {
 
 			var u user.User
 
@@ -62,18 +58,28 @@ func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
 				log.Fatal().Msg(err.Error())
 			}
 
-			activationURL := fmt.Sprintf("%s/dev/users/activate", hostname)
+			log.Debug().Msg("Building activation URL")
+
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.Email.Activate.URL, nil)
+			if err != nil {
+				log.Fatal().Msg(err.Error())
+			}
+			q := req.URL.Query()
+			q.Add("email", u.Email)
+			//Using the uuid as token
+			q.Add("token", u.ID)
+			req.URL.RawQuery = q.Encode()
+			req.URL.Scheme = "https"
 
 			if err := sendEmail(
 				"Activate account",
-				fmt.Sprintf("<a href=\"%s\">Click here to Activate</a>", activationURL),
-				fmt.Sprintf("Click here to Activate: \"%s\"", activationURL),
+				fmt.Sprintf("<a href=\"%s\">Click here to Activate</a>", req.URL.String()),
+				fmt.Sprintf("Click here to Activate: \"%s\"", req.URL.String()),
 				u.Email,
-				sender,
+				cfg.Email.Sender,
 				svc); err != nil {
 				log.Fatal().Msg(err.Error())
 			}
-		case "MODIFY":
 		}
 	}
 
@@ -145,7 +151,7 @@ func initHandler(ctx context.Context, e events.DynamoDBEvent) error {
 		return err
 	}
 
-	return handler(ctx, e, ses.New(sess), cfg.Email.Sender)
+	return handler(ctx, e, ses.New(sess), cfg)
 
 }
 

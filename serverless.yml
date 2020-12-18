@@ -9,10 +9,13 @@ frameworkVersion: '2'
 provider:
   name: aws
   runtime: go1.x
+  stage: ${opt:stage, 'dev'}
+  region: ${self:provider.environment.USERS_AWS_REGION}
   environment:
     USERS_AWS_DYNAMODB_TABLE_USER: ${env:USERS_AWS_DYNAMODB_TABLE_USER}
     USERS_AWS_REGION: ${env:USERS_AWS_REGION}
     USERS_EMAIL_SENDER: ${env:USERS_EMAIL_SENDER}
+    USERS_EMAIL_ACTIVATE_URL: { "Fn::Join" : ["", [{ "Ref" : "ApiGatewayRestApi" }, ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}/users/activate" ] ]  }
     USERS_LOG_LEVEL: ${env:USERS_LOG_LEVEL}
 
   iamRoleStatements:
@@ -27,8 +30,6 @@ provider:
         - ses:SendRawEmail
       Resource: "*"
 
-  stage: dev
-  region: ${self:provider.environment.USERS_AWS_REGION}
 
 resources:
   Resources:

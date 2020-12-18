@@ -57,7 +57,16 @@ type NewUser struct {
 
 //IsUserProfileKeys verifies that pk and sk correspond to a User's profile row
 func IsUserProfileKeys(keys map[string]events.DynamoDBAttributeValue) bool {
-	var userProfileKey bool
+	return isUserKeys(DynamoDBPrefixUser, DynamoDBPrefixProfile, keys)
+}
+
+//IsUserTokenKeys verifies that pk and sk correspond to a User's token row
+func IsUserTokenKeys(keys map[string]events.DynamoDBAttributeValue) bool {
+	return isUserKeys(DynamoDBPrefixUser, DynamoDBPrefixToken, keys)
+}
+
+func isUserKeys(primaryKey, sortKey string,
+	keys map[string]events.DynamoDBAttributeValue) bool {
 
 	log.Debug().Msgf("Checking User Profile keys")
 
@@ -75,12 +84,12 @@ func IsUserProfileKeys(keys map[string]events.DynamoDBAttributeValue) bool {
 
 	log.Debug().Msgf("Both keys are set")
 
-	userProfileKey = strings.HasPrefix(pk.String(), DynamoDBPrefixUser) &&
-		strings.HasPrefix(sk.String(), DynamoDBPrefixProfile)
+	userKeys := strings.HasPrefix(pk.String(), primaryKey) &&
+		strings.HasPrefix(sk.String(), sortKey)
 
-	log.Debug().Msgf("IsUserProfileKeys: %v", userProfileKey)
+	log.Debug().Msgf("IsUserProfileKeys: %v", userKeys)
 
-	return userProfileKey
+	return userKeys
 }
 
 //Create creates a new user in DynamoDB and returns a pointer to the User object
@@ -137,8 +146,12 @@ func Create(ctx context.Context, svc dynamodbiface.DynamoDBAPI, nu *NewUser,
 			{
 				Put: &dynamodb.Put{
 					Item: map[string]*dynamodb.AttributeValue{
-						"pk": {S: aws.String(u.getUserPK())},
-						"sk": {S: aws.String(u.getTokenSK())},
+						"pk":        {S: aws.String(u.getUserPK())},
+						"sk":        {S: aws.String(u.getTokenSK())},
+						"id":        {S: aws.String(u.ID)},
+						"firstName": {S: aws.String(u.FirstName)},
+						"lastName":  {S: aws.String(u.LastName)},
+						"email":     {S: aws.String(u.Email)},
 					},
 					TableName: aws.String(tableName),
 				},

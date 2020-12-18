@@ -105,33 +105,34 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestIsUserProfileKeys(t *testing.T) {
-	tests := []struct {
-		desc     string
-		keys     map[string]events.DynamoDBAttributeValue
-		expected bool
-	}{
-		{
-			desc: "profileKeys",
-			keys: map[string]events.DynamoDBAttributeValue{
-				"pk": events.NewStringAttribute("USER#"),
-				"sk": events.NewStringAttribute("PROFILE#"),
-			},
-			expected: true,
-		},
-		{
-			desc: "differentKeys",
-			keys: map[string]events.DynamoDBAttributeValue{
-				"pk": events.NewStringAttribute("USER#"),
-				"sk": events.NewStringAttribute("DIFF#"),
-			},
-			expected: false,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.desc, func(t *testing.T) {
-			if result := IsUserProfileKeys(tc.keys); result != tc.expected {
-				t.Errorf("Expected: %v. Received: %v", tc.expected, result)
-			}
-		})
-	}
+
+	t.Run("profileKeys", func(t *testing.T) {
+		keys := map[string]events.DynamoDBAttributeValue{
+			"pk": events.NewStringAttribute("USER#"),
+			"sk": events.NewStringAttribute("PROFILE#"),
+		}
+		if result := IsUserProfileKeys(keys); !result {
+			t.Errorf("Expected: %v.", result)
+		}
+	})
+
+	t.Run("tokenKeys", func(t *testing.T) {
+		keys := map[string]events.DynamoDBAttributeValue{
+			"pk": events.NewStringAttribute("USER#"),
+			"sk": events.NewStringAttribute("TOKEN#"),
+		}
+		if result := IsUserTokenKeys(keys); !result {
+			t.Errorf("Expected: %v.", result)
+		}
+	})
+
+	t.Run("differentKeys", func(t *testing.T) {
+		keys := map[string]events.DynamoDBAttributeValue{
+			"pk": events.NewStringAttribute("USER#"),
+			"sk": events.NewStringAttribute("DIFF#"),
+		}
+		if result := IsUserProfileKeys(keys); result {
+			t.Errorf("Expected: %v.", !result)
+		}
+	})
 }
