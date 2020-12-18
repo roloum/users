@@ -124,7 +124,7 @@ func Create(ctx context.Context, svc dynamodbiface.DynamoDBAPI, nu *NewUser,
 
 	log.Debug().Msgf("Creating row: %+v", u)
 
-	_, err := svc.TransactWriteItemsWithContext(ctx, &dynamodb.TransactWriteItemsInput{
+	result, err := svc.TransactWriteItemsWithContext(ctx, &dynamodb.TransactWriteItemsInput{
 		TransactItems: []*dynamodb.TransactWriteItem{
 			{
 				Put: &dynamodb.Put{
@@ -153,27 +153,12 @@ func Create(ctx context.Context, svc dynamodbiface.DynamoDBAPI, nu *NewUser,
 						"lastName":  {S: aws.String(u.LastName)},
 						"email":     {S: aws.String(u.Email)},
 					},
-					TableName: aws.String(tableName),
+					TableName:           aws.String(tableName),
+					ConditionExpression: aws.String("attribute_not_exists(pk) and attribute_not_exists(sk)"),
 				},
 			},
 		},
 	})
-
-	//	input := &dynamodb.PutItemInput{
-	//		Item: map[string]*dynamodb.AttributeValue{
-	//			"pk":        {S: aws.String(u.getUserPK())},
-	//			"sk":        {S: aws.String(u.getProfileSK())},
-	//			"id":        {S: aws.String(u.ID)},
-	//			"firstName": {S: aws.String(u.FirstName)},
-	//			"lastName":  {S: aws.String(u.LastName)},
-	//			"email":     {S: aws.String(u.Email)},
-	//			"active":    {BOOL: aws.Bool(u.Active)},
-	//			"created":   {S: aws.String(u.Created)},
-	//			"type":      {S: aws.String(DynamoDBTypeUser)},
-	//		},
-	//		ConditionExpression: aws.String("attribute_not_exists(pk) and attribute_not_exists(sk)"),
-	//		TableName:           aws.String(tableName),
-	//	}
 
 	if err != nil {
 
@@ -192,15 +177,69 @@ func Create(ctx context.Context, svc dynamodbiface.DynamoDBAPI, nu *NewUser,
 		return nil, err
 	}
 
+	log.Debug().Msgf("Result: %+v", result)
+
 	return u, nil
 }
 
-//Activate sets the active column in the user-profile row to true
+//Activate sets the active column in the user-profile row to true and deletes
+//The token row
 func (u *User) Activate(ctx context.Context, svc dynamodbiface.DynamoDBAPI,
-	tableName string) error {
+	tableName, token string) error {
 
 	log.Debug().Msgf("Activating user: %s", u.Email)
 
+	u.ID = token
+
+	result, err := svc.TransactWriteItemsWithContext(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []*dynamodb.TransactWriteItem{
+			{
+				Update: &dynamodb.Update{
+					TableName: aws.String(tableName),
+					Key: map[string]*dynamodb.AttributeValue{
+						"pk": {S: aws.String(u.getUserPK())},
+						"sk": {S: aws.String(u.getProfileSK())},
+					},
+					ExpressionAttributeNames: map[string]*string{
+						"#A": aws.String("active"),
+					},
+					ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+						":active":   {BOOL: aws.Bool(true)},
+						":inactive": {BOOL: aws.Bool(false)},
+					},
+					UpdateExpression:    aws.String("SET #A = :active"),
+					ConditionExpression: aws.String("#A = :inactive"),
+				},
+			},
+			{
+				Delete: &dynamodb.Delete{
+					TableName: aws.String(tableName),
+					Key: map[string]*dynamodb.AttributeValue{
+						"pk": {S: aws.String(u.getUserPK())},
+						"sk": {S: aws.String(u.getTokenSK())},
+					},
+				},
+			},
+		},
+	})
+
+	if err != nil {
+
+		log.Debug().Msg(err.Error())
+		return err
+	}
+
+	log.Debug().Msgf("Result: %+v", result)
+
+	return nil
+}
+
+//Load Loads the profile information of the User based on email
+func (u *User) Load(ctx context.Context, svc dynamodbiface.DynamoDBAPI,
+	tableName, token string) error {
+
+	//	GetItem(*dynamodb.GetItemInput) (*dynamodb.GetItemOutput, error)
+	//svc.GetItem()
 	return nil
 }
 

@@ -20,8 +20,11 @@ const (
 	//MsgUserActivated message returned when user is activated successfully
 	MsgUserActivated = "MsgUserActivated"
 
-	//ErrorEmailIsEmpty
+	//ErrorEmailIsEmpty message returned if email is empty
 	ErrorEmailIsEmpty = "EmailIsEmpty"
+
+	//ErrorTokenIsEmpty message returned if token is empty
+	ErrorTokenIsEmpty = "TokenIsEmpty"
 )
 
 type (
@@ -60,6 +63,11 @@ func Handler(ctx context.Context, dynamoDB *dynamodb.DynamoDB,
 		return getResponse(http.StatusUnprocessableEntity, ErrorEmailIsEmpty)
 	}
 
+	token := request.QueryStringParameters["token"]
+	if token == "" {
+		return getResponse(http.StatusUnprocessableEntity, ErrorTokenIsEmpty)
+	}
+
 	email = strings.ToLower(email)
 	log.Info().Msgf("Activating account: %s", email)
 
@@ -67,7 +75,7 @@ func Handler(ctx context.Context, dynamoDB *dynamodb.DynamoDB,
 		Email: email,
 	}
 
-	err := u.Activate(ctx, dynamoDB, cfg.AWS.DynamoDB.Table.User)
+	err := u.Activate(ctx, dynamoDB, cfg.AWS.DynamoDB.Table.User, token)
 	if err != nil {
 		return getResponse(http.StatusUnprocessableEntity, err.Error())
 	}

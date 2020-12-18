@@ -16,6 +16,7 @@ var activateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		email, _ := cmd.Flags().GetString("email")
+		token, _ := cmd.Flags().GetString("token")
 
 		ctx := cmd.Context()
 		log.Info().Msg("Executing the activate command")
@@ -34,7 +35,8 @@ var activateCmd = &cobra.Command{
 			Email: email,
 		}
 
-		if err := u.Activate(ctx, dynamoDB, cfg.AWS.DynamoDB.Table.User); err != nil {
+		if err := u.Activate(ctx, dynamoDB, cfg.AWS.DynamoDB.Table.User,
+			token); err != nil {
 			log.Error().Msg(err.Error())
 			return err
 		}
@@ -48,7 +50,9 @@ var activateCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(activateCmd)
 
-	var email string
+	var email, token string
 	activateCmd.Flags().StringVarP(&email, "email", "e", "", "Email (required)")
 	activateCmd.MarkFlagRequired("email")
+	activateCmd.Flags().StringVarP(&token, "token", "t", "", "Token (required)")
+	activateCmd.MarkFlagRequired("token")
 }

@@ -60,7 +60,8 @@ func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
 
 			log.Debug().Msg("Building activation URL")
 
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.Email.Activate.URL, nil)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+				cfg.Email.Activate.URL, nil)
 			if err != nil {
 				log.Fatal().Msg(err.Error())
 			}
