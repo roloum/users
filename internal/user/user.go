@@ -34,6 +34,9 @@ const (
 	//ErrorDuplicateUser Returned when the user already exists in the table
 	ErrorDuplicateUser = "DuplicatedUser"
 
+	//ErrorActivateUser Returned when the transaction to activate user did not succeed
+	ErrorActivateUser = "CouldNotActivateUser"
+
 	//ErrorUserTableNameIsEmpty Error describes AWS table name being empty
 	ErrorUserTableNameIsEmpty = "UserTableNameIsEmpty"
 )
@@ -207,8 +210,9 @@ func (u *User) Activate(ctx context.Context, svc dynamodbiface.DynamoDBAPI,
 						":active":   {BOOL: aws.Bool(true)},
 						":inactive": {BOOL: aws.Bool(false)},
 					},
-					UpdateExpression:    aws.String("SET #A = :active"),
-					ConditionExpression: aws.String("#A = :inactive"),
+					UpdateExpression:                    aws.String("SET #A = :active"),
+					ConditionExpression:                 aws.String("#A = :inactive"),
+					ReturnValuesOnConditionCheckFailure: aws.String(dynamodb.ReturnValueNone),
 				},
 			},
 			{
@@ -218,6 +222,8 @@ func (u *User) Activate(ctx context.Context, svc dynamodbiface.DynamoDBAPI,
 						"pk": {S: aws.String(u.getUserPK())},
 						"sk": {S: aws.String(u.getTokenSK())},
 					},
+					ConditionExpression:                 aws.String("attribute_exists(pk) AND attribute_exists(sk)"),
+					ReturnValuesOnConditionCheckFailure: aws.String(dynamodb.ReturnValueNone),
 				},
 			},
 		},
@@ -226,6 +232,14 @@ func (u *User) Activate(ctx context.Context, svc dynamodbiface.DynamoDBAPI,
 	if err != nil {
 
 		log.Debug().Msg(err.Error())
+
+		if aerr, ok := err.(awserr.Error); ok {
+
+			if aerr.Code() == dynamodb.ErrCodeTransactionCanceledException {
+
+				return errors.New(ErrorActivateUser)
+			}
+		}
 		return err
 	}
 

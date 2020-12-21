@@ -22,6 +22,8 @@ provider:
     - Effect: "Allow"
       Action:
         - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
       Resource:
         - Fn::GetAtt: [userTable, Arn]
     - Effect: "Allow"
