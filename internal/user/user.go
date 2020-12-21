@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 
 	"github.com/google/uuid"
@@ -39,6 +40,14 @@ const (
 
 	//ErrorUserTableNameIsEmpty Error describes AWS table name being empty
 	ErrorUserTableNameIsEmpty = "UserTableNameIsEmpty"
+
+	//ErrorUserDoesNotExist Error displayed when attempting to load an user
+	//does not exist
+	ErrorUserDoesNotExist = "UserDoesNotExist"
+
+	//ErrorUserAlreadyActive Error displayed when attempting to activate an account
+	//That is already active
+	ErrorUserAlreadyActive = "UserAlreadyActive"
 )
 
 //User contains information about the user
@@ -192,6 +201,14 @@ func (u *User) Activate(ctx context.Context, svc dynamodbiface.DynamoDBAPI,
 
 	log.Debug().Msgf("Activating user: %s", u.Email)
 
+	if err := u.Load(ctx, svc, tableName); err != nil {
+		return err
+	}
+
+	if u.Active {
+		return errors.New(ErrorUserAlreadyActive)
+	}
+
 	u.ID = token
 
 	result, err := svc.TransactWriteItemsWithContext(ctx, &dynamodb.TransactWriteItemsInput{
@@ -250,10 +267,36 @@ func (u *User) Activate(ctx context.Context, svc dynamodbiface.DynamoDBAPI,
 
 //Load Loads the profile information of the User based on email
 func (u *User) Load(ctx context.Context, svc dynamodbiface.DynamoDBAPI,
-	tableName, token string) error {
+	tableName string) error {
 
-	//	GetItem(*dynamodb.GetItemInput) (*dynamodb.GetItemOutput, error)
-	//svc.GetItem()
+	if u.Email == "" {
+		return errors.New("Email is not set")
+	}
+
+	log.Debug().Msgf("Loading profile: %s", u.Email)
+
+	result, err := svc.GetItem(&dynamodb.GetItemInput{
+		TableName: aws.String(tableName),
+		Key: map[string]*dynamodb.AttributeValue{
+			"pk": {S: aws.String(u.getUserPK())},
+			"sk": {S: aws.String(u.getProfileSK())},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	if result.Item == nil {
+		return errors.New(ErrorUserDoesNotExist)
+	}
+
+	err = dynamodbattribute.UnmarshalMap(result.Item, &u)
+	if err != nil {
+		return err
+	}
+
+	log.Debug().Msgf("Result: %+v", result)
+
 	return nil
 }
 
