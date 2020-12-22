@@ -58,6 +58,8 @@ func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
 				log.Fatal().Msg(err.Error())
 			}
 
+			log.Info().Msgf("Sending activation email for %s", u.Email)
+
 			log.Debug().Msg("Building activation URL")
 
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet,
@@ -81,6 +83,39 @@ func handler(ctx context.Context, e events.DynamoDBEvent, svc *ses.SES,
 				svc); err != nil {
 				log.Fatal().Msg(err.Error())
 			}
+
+		} else if user.IsUserProfileKeys(v.Change.Keys) &&
+			events.DynamoDBOperationType(v.EventName) == events.DynamoDBOperationTypeModify {
+
+			//Is the user activating the account?
+			var old, new user.User
+			err := uaws.UnmarshalStreamImage(v.Change.OldImage, &old)
+			if err != nil {
+				log.Fatal().Msg(err.Error())
+			}
+			err = uaws.UnmarshalStreamImage(v.Change.NewImage, &new)
+			if err != nil {
+				log.Fatal().Msg(err.Error())
+			}
+
+			log.Debug().Msgf("Old_u.active=%v, New_u.active=%v", old.Active, new.Active)
+
+			//User activating account
+			if !old.Active && new.Active {
+
+				log.Info().Msgf("Sending welcome email for %s", new.Email)
+
+				if err := sendEmail(
+					"Welcome user",
+					"Hello World!",
+					"Hello World!",
+					new.Email,
+					cfg.Email.Sender,
+					svc); err != nil {
+					log.Fatal().Msg(err.Error())
+				}
+			}
+
 		}
 	}
 

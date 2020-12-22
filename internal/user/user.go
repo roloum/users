@@ -69,18 +69,26 @@ type NewUser struct {
 
 //IsUserProfileKeys verifies that pk and sk correspond to a User's profile row
 func IsUserProfileKeys(keys map[string]events.DynamoDBAttributeValue) bool {
-	return isUserKeys(DynamoDBPrefixUser, DynamoDBPrefixProfile, keys)
+	userKeys := isUserKeys(DynamoDBPrefixUser, DynamoDBPrefixProfile, keys)
+
+	log.Debug().Msgf("IsUserProfileKeys: %v", userKeys)
+
+	return userKeys
 }
 
 //IsUserTokenKeys verifies that pk and sk correspond to a User's token row
 func IsUserTokenKeys(keys map[string]events.DynamoDBAttributeValue) bool {
-	return isUserKeys(DynamoDBPrefixUser, DynamoDBPrefixToken, keys)
+	tokenKeys := isUserKeys(DynamoDBPrefixUser, DynamoDBPrefixToken, keys)
+
+	log.Debug().Msgf("IsUserTokenKeys: %v", tokenKeys)
+
+	return tokenKeys
 }
 
 func isUserKeys(primaryKey, sortKey string,
 	keys map[string]events.DynamoDBAttributeValue) bool {
 
-	log.Debug().Msgf("Checking User Profile keys")
+	log.Debug().Msgf("Checking User keys")
 
 	//Attribute pk exists in map?
 	pk, ok := keys["pk"]
@@ -96,12 +104,8 @@ func isUserKeys(primaryKey, sortKey string,
 
 	log.Debug().Msgf("Both keys are set")
 
-	userKeys := strings.HasPrefix(pk.String(), primaryKey) &&
+	return strings.HasPrefix(pk.String(), primaryKey) &&
 		strings.HasPrefix(sk.String(), sortKey)
-
-	log.Debug().Msgf("IsUserProfileKeys: %v", userKeys)
-
-	return userKeys
 }
 
 //Create creates a new user in DynamoDB and returns a pointer to the User object
@@ -275,7 +279,7 @@ func (u *User) Load(ctx context.Context, svc dynamodbiface.DynamoDBAPI,
 
 	log.Debug().Msgf("Loading profile: %s", u.Email)
 
-	result, err := svc.GetItem(&dynamodb.GetItemInput{
+	result, err := svc.GetItemWithContext(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"pk": {S: aws.String(u.getUserPK())},

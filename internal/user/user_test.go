@@ -12,6 +12,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const (
+	UserTable = "User"
+)
+
 func init() {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
 	test.SetEnvironment()
@@ -36,7 +40,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			mockDBSvc: &test.MockDynamoDB{},
 			err:       nil,
-			tableName: "User",
+			tableName: UserTable,
 		},
 		{
 			desc: ErrorFirstNameIsEmpty,
@@ -46,7 +50,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			mockDBSvc: &test.MockDynamoDB{},
 			err:       errors.New(ErrorFirstNameIsEmpty),
-			tableName: "User",
+			tableName: UserTable,
 		},
 		{
 			desc: ErrorLastNameIsEmpty,
@@ -56,7 +60,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			mockDBSvc: &test.MockDynamoDB{},
 			err:       errors.New(ErrorLastNameIsEmpty),
-			tableName: "User",
+			tableName: UserTable,
 		},
 		{
 			desc: ErrorEmailIsEmpty,
@@ -66,7 +70,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			mockDBSvc: &test.MockDynamoDB{},
 			err:       errors.New(ErrorEmailIsEmpty),
-			tableName: "User",
+			tableName: UserTable,
 		},
 		{
 			desc: ErrorInvalidEmail,
@@ -77,7 +81,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			mockDBSvc: &test.MockDynamoDB{},
 			err:       errors.New(ErrorInvalidEmail),
-			tableName: "User",
+			tableName: UserTable,
 		},
 		{
 			desc: ErrorUserTableNameIsEmpty,
