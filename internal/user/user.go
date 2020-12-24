@@ -129,7 +129,7 @@ func Create(ctx context.Context, svc dynamodbiface.DynamoDBAPI, nu *NewUser,
 	userID := uuid.New()
 	log.Debug().Msgf("Generated UUID: %s", userID.String())
 
-	u := &User{
+	u := User{
 		Email:     nu.Email,
 		ID:        userID.String(),
 		FirstName: nu.FirstName,
@@ -195,7 +195,7 @@ func Create(ctx context.Context, svc dynamodbiface.DynamoDBAPI, nu *NewUser,
 
 	log.Debug().Msgf("Result: %+v", result)
 
-	return u, nil
+	return &u, nil
 }
 
 //Activate sets the active column in the user-profile row to true and deletes

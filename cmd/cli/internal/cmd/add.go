@@ -34,13 +34,13 @@ var addCmd = &cobra.Command{
 			return fmt.Errorf("Missing DynamoDB connection")
 		}
 
-		nu := &user.NewUser{
+		nu := user.NewUser{
 			Email:     email,
 			FirstName: firstName,
 			LastName:  lastName,
 		}
 
-		_, err := user.Create(ctx, dynamoDB, nu, cfg.AWS.DynamoDB.Table.User)
+		_, err := user.Create(ctx, dynamoDB, &nu, cfg.AWS.DynamoDB.Table.User)
 		if err != nil {
 			return err
 		}
