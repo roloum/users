@@ -1,0 +1,16 @@
+name: users-actions
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: serverless test
+        uses: serverless/github-action@master
+        with:
+          args: test
+#        env:
+#          ENV_VARIABLE: ${{ secrets.ENV_VARIABLE }}
