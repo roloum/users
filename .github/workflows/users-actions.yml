@@ -8,9 +8,9 @@ jobs:
         uses: actions/setup-go@v2
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: serverless test
-        uses: serverless/github-action@master
-        with:
-          args: test
+#      - name: serverless test
+#        uses: serverless/github-action@master
+#        with:
+#          args: test
 #        env:
 #          ENV_VARIABLE: ${{ secrets.ENV_VARIABLE }}
